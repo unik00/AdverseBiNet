@@ -344,10 +344,8 @@ from math import ceil
 
 for l in all_inputs:
     im = cv2.imread(l, cv2.IMREAD_GRAYSCALE)
-    new_h = ceil(im.shape[0] / 256.0) * 256
-    new_w = ceil(im.shape[1] / 256.0) * 256
-    new_im = np.ones((new_h,new_w), dtype=np.uint8) * 255
-    new_im[:im.shape[0], :im.shape[1]] = im
+    new_im = im.copy()
+    new_h, new_w = new_im.shape[0], new_im.shape[1]
     # print(im.shape)
     # print(new_im.shape)
     # plt.imshow(new_im)
@@ -355,9 +353,26 @@ for l in all_inputs:
     crops = list()
     for i in range(0,new_h,256):
         for j in range(0,new_w,256):
-            crop = new_im[i:i+256,j:j+256]
+            x = i
+            u = i + 256
+            y = j 
+            v = j + 256 
+
+
+            if u >= new_h:
+                d = u - new_h 
+                x -= d 
+                u -= d
+            if v >= new_w:
+                d = v - new_w
+                y -= d
+                v -= d 
+            # print(x,y,u,v)
+            crop = new_im[x:u,y:v]
+            # plt.imshow(crop)
+            # plt.show()
             crop = np.expand_dims(crop, -1)/127.5 - 1.
-            crops.append((crop, (i, j)))
+            crops.append((crop, (x, y)))
 
     if len(crops) % params['batch_size'] != 0:
         need = params['batch_size'] - len(crops) % params['batch_size']
@@ -374,6 +389,9 @@ for l in all_inputs:
     for k in range(batches_cnt):
         batchx_data_raw = crops[k * params['batch_size'] : (k + 1) * params['batch_size']]
         batchx_data = [x[0] for x in batchx_data_raw]
+        
+        for t in batchx_data:
+            print("t: ", t.shape)
 
         feed_dict = {Real_input : batchx_data}
         
